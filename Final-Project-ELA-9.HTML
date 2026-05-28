@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Interactive Website on Ethical Dilemmas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Josefin+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root {
+  --bg: #090806;
+  --gold: #c9993e;
+  --gold2: #f5d48a;
+  --text: #e8e2d8;
+  --muted: #8a7d6f;
+  --dim: rgba(255,255,255,.55);
+  --border: rgba(255,255,255,.07);
+  --ease: cubic-bezier(.16,1,.3,1);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { background:var(--bg); color:var(--text); font-family:'Cormorant Garamond',serif; overflow-x:hidden; }
+
+#bg { position:fixed; inset:0; z-index:-2; }
+.grain {
+  position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.035;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.hero {
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  text-align:center; padding:2rem; position:relative;
+}
+.hero-inner { max-width:820px; z-index:10; }
+.eyebrow {
+  font-family:'Josefin Sans',sans-serif; font-size:.65rem; letter-spacing:.55em;
+  text-transform:uppercase; color:var(--gold); margin-bottom:2.5rem;
+  animation:fadeDown 1s var(--ease) both;
+}
+.hero h1 {
+  font-size:clamp(4.5rem,11vw,10rem); line-height:.9; font-weight:300;
+  letter-spacing:-.03em; animation:fadeUp 1.2s var(--ease) .1s both;
+}
+.hero h1 .sub {
+  display:block; font-size:.22em; letter-spacing:.3em; text-transform:uppercase;
+  color:rgba(255,255,255,.3); margin-bottom:1rem; font-style:normal;
+}
+.hero h1 em {
+  font-style:italic;
+  background:linear-gradient(110deg, var(--gold) 20%, var(--gold2) 50%, var(--gold) 80%);
+  background-size:200%; -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  animation:shimmer 7s linear infinite;
+}
+.hero-desc {
+  max-width:520px; margin:2.5rem auto 0; font-size:1.25rem; line-height:1.8;
+  color:var(--dim); animation:fadeUp 1.4s var(--ease) .2s both;
+}
+.scroll-hint {
+  position:absolute; bottom:2.5rem; left:50%; transform:translateX(-50%);
+  display:flex; flex-direction:column; align-items:center; gap:.8rem;
+}
+.scroll-hint span {
+  font-family:'Josefin Sans'; font-size:.55rem; letter-spacing:.45em;
+  text-transform:uppercase; color:rgba(255,255,255,.3);
+}
+.scroll-line {
+  width:1px; height:54px;
+  background:linear-gradient(to bottom, var(--gold), transparent);
+  animation:pulse 2.2s ease-in-out infinite;
+}
+
+nav {
+  position:sticky; top:0; z-index:100;
+  background:rgba(9,8,6,.8); backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);
+}
+.nav-inner {
+  max-width:1100px; margin:auto; padding:.7rem 1.5rem;
+  display:flex; justify-content:center; gap:.25rem; flex-wrap:wrap;
+}
+.nav-btn {
+  font-family:'Josefin Sans'; font-size:.62rem; letter-spacing:.18em;
+  text-transform:uppercase; color:var(--muted);
+  background:none; border:none; cursor:pointer;
+  padding:.7rem 1.1rem; position:relative; transition:color .4s;
+}
+.nav-btn::after {
+  content:''; position:absolute; bottom:0; left:20%; right:20%;
+  height:1px; background:var(--gold);
+  transform:scaleX(0); transition:transform .4s var(--ease);
+}
+.nav-btn:hover { color:var(--text); }
+.nav-btn.active { color:var(--gold); }
+.nav-btn.active::after { transform:scaleX(1); }
+
+.container { max-width:820px; margin:auto; padding:5rem 1.5rem 8rem; }
+.page { display:none; animation:fadeUp .7s var(--ease) both; }
+.page.active { display:block; }
+
+.label {
+  font-family:'Josefin Sans'; font-size:.58rem; letter-spacing:.5em;
+  text-transform:uppercase; color:var(--gold); margin-bottom:1.2rem;
+}
+.page-title {
+  font-size:clamp(2.8rem,6vw,4.8rem); font-weight:300; line-height:1.05;
+  margin-bottom:2.5rem; letter-spacing:-.02em;
+}
+.page-title em { color:var(--gold); font-style:italic; }
+.body-text {
+  font-size:1.2rem; line-height:2; color:rgba(255,255,255,.8);
+  margin-bottom:1.8rem;
+}
+
+.sep { display:flex; align-items:center; gap:2rem; margin:4rem 0; }
+.sep-line { flex:1; height:1px; background:linear-gradient(to right,transparent,var(--border),transparent); }
+.sep-dot { color:var(--gold); font-size:1rem; opacity:.6; }
+
+.quote {
+  margin:3.5rem 0; padding:2.5rem 2.5rem 2.5rem 3rem;
+  border-left:2px solid var(--gold);
+  background:linear-gradient(135deg,rgba(255,255,255,.025),transparent);
+  border-radius:0 12px 12px 0;
+  position:relative; overflow:hidden;
+}
+.quote::before {
+  content:'"'; position:absolute; top:-1.5rem; left:1rem;
+  font-size:10rem; line-height:1; color:rgba(255,255,255,.025);
+  pointer-events:none;
+}
+.quote-text {
+  font-size:1.7rem; line-height:1.55; font-style:italic; font-weight:300;
+  position:relative; z-index:1;
+}
+.quote cite {
+  display:block; margin-top:1rem; font-style:normal;
+  font-family:'Josefin Sans'; font-size:.6rem; letter-spacing:.25em;
+  text-transform:uppercase; color:var(--gold); opacity:.8;
+}
+
+.dilemma {
+  margin:3rem 0; padding:1.8rem 2rem;
+  background:rgba(201,153,62,.05); border:1px solid rgba(201,153,62,.2);
+  border-radius:14px;
+}
+.dilemma .label { margin-bottom:.8rem; }
+.dilemma p {
+  font-size:1.4rem; line-height:1.6; font-style:italic; font-weight:300;
+}
+
+.frameworks {
+  display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin:3.5rem 0;
+}
+.fw {
+  padding:1.8rem; border-radius:14px;
+  background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.015));
+  border:1px solid var(--border);
+  transform-style:preserve-3d; transition:border-color .4s;
+}
+.fw:hover { border-color:rgba(201,153,62,.3); }
+.fw h4 { font-size:1.6rem; font-weight:400; margin-bottom:.8rem; }
+.fw p { font-size:1.05rem; line-height:1.85; color:rgba(255,255,255,.68); }
+
+.implications { margin:3rem 0; }
+.implications > h4 {
+  font-size:1.5rem; font-weight:400; color:var(--gold);
+  margin-bottom:1.5rem; font-style:italic;
+}
+.imp {
+  display:flex; gap:1rem; align-items:flex-start;
+  padding:1.1rem 1.3rem; margin-bottom:.9rem;
+  background:rgba(255,255,255,.018); border:1px solid var(--border);
+  border-radius:10px;
+}
+.imp-tag {
+  font-family:'Josefin Sans'; font-size:.55rem; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--gold);
+  background:rgba(201,153,62,.1); padding:.35rem .7rem;
+  border-radius:20px; white-space:nowrap; flex-shrink:0; margin-top:.15rem;
+}
+.imp-text { font-size:1.08rem; line-height:1.8; color:rgba(255,255,255,.72); }
+
+.card-row { display:grid; grid-template-columns:repeat(3,1fr); gap:1.25rem; margin-top:3rem; }
+.story-card {
+  padding:2rem 1.8rem; border-radius:16px;
+  background:linear-gradient(135deg,rgba(255,255,255,.04),rgba(255,255,255,.015));
+  border:1px solid var(--border);
+  cursor:pointer; transition:transform .6s var(--ease), border-color .5s, box-shadow .6s;
+  position:relative; overflow:hidden;
+}
+.story-card::before {
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(circle at top left,rgba(201,153,62,.12),transparent 55%);
+  opacity:0; transition:opacity .8s;
+}
+.story-card:hover { transform:translateY(-8px); border-color:rgba(201,153,62,.3); box-shadow:0 24px 60px rgba(0,0,0,.4); }
+.story-card:hover::before { opacity:1; }
+.card-num {
+  font-family:'Josefin Sans'; font-size:.55rem; letter-spacing:.4em;
+  color:var(--gold); opacity:.6; margin-bottom:1rem; text-transform:uppercase;
+}
+.story-card h3 { font-size:1.65rem; font-weight:400; margin-bottom:.6rem; line-height:1.2; }
+.story-card p { font-size:1rem; color:rgba(255,255,255,.5); line-height:1.65; }
+
+.src {
+  padding:1.4rem 1.6rem; border-radius:12px;
+  background:rgba(255,255,255,.018); border:1px solid var(--border);
+  margin-bottom:.85rem;
+}
+.src h4 { font-size:1.2rem; font-weight:400; margin-bottom:.3rem; }
+.src p {
+  font-family:'Josefin Sans'; font-size:.7rem; letter-spacing:.04em;
+  color:rgba(255,255,255,.45); line-height:1.7;
+}
+
+footer {
+  text-align:center; padding:4rem 2rem 5rem; border-top:1px solid var(--border);
+}
+footer h4 {
+  font-size:1.8rem; font-style:italic; font-weight:300;
+  color:rgba(255,255,255,.3); margin-bottom:.6rem;
+}
+footer p {
+  font-family:'Josefin Sans'; font-size:.58rem; letter-spacing:.35em;
+  text-transform:uppercase; color:rgba(255,255,255,.2);
+}
+
+@keyframes shimmer { to { background-position:200% center; } }
+@keyframes fadeUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:none; } }
+@keyframes fadeDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:none; } }
+@keyframes pulse { 0%,100% { opacity:.25; transform:scaleY(.6); } 50% { opacity:1; transform:scaleY(1); } }
+
+@media(max-width:700px) {
+  .frameworks { grid-template-columns:1fr; }
+  .card-row { grid-template-columns:1fr; }
+  .quote-text { font-size:1.35rem; }
+  .page-title { font-size:2.6rem; }
+}
+
+.story-section {
+  margin-bottom:3rem;
+  padding:2rem;
+  background:rgba(255,255,255,.015);
+  border:1px solid var(--border);
+  border-radius:12px;
+}
+
+.story-section h3 {
+  font-size:1.4rem;
+  color:var(--gold);
+  margin-bottom:1.2rem;
+  font-style:italic;
+}
+
+.story-section p {
+  font-size:1.05rem;
+  line-height:1.9;
+  color:rgba(255,255,255,.8);
+  margin-bottom:1rem;
+}
+
+.story-section a {
+  color:var(--gold);
+  text-decoration:none;
+  transition:opacity .3s;
+  cursor:pointer;
+}
+
+.story-section a:hover {
+  opacity:.7;
+  text-decoration:underline;
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+<div class="grain"></div>
+
+<section class="hero">
+  <div class="hero-inner">
+    <p class="eyebrow">Ethics &amp; Literature</p>
+    <h1>
+      <span class="sub">Interactive Website on</span>
+      <em>Ethical Dilemmas</em>
+    </h1>
+  </div>
+</section>
+
+<nav>
+  <div class="nav-inner">
+    <button class="nav-btn active" onclick="go('home',this)">Home</button>
+    <button class="nav-btn" onclick="go('worstsin',this)">Story</button>
+    <button class="nav-btn" onclick="go('sources',this)">Sources</button>
+  </div>
+</nav>
+
+<div class="container">
+
+<!-- HOME -->
+<div class="page active" id="home">
+  <div class="label">Introduction</div>
+
+</div>
+
+<!--  STORY -->
+<div class="page" id="worstsin">
+  <div class="label">Interactive Story</div>
+  <h2 class="page-title">Story</h2>
+  
+  <div class="body-text" id="storyContent">
+    <div id="choice1" class="story-section">
+      <h3>Choice 1:</h3>
+      <p>There was once a boy called Zhirenkov Nikita Denisovich, who was 15 years old, and his hair was black and slicked back at the back of his head. Zhirenkov was slightly darker than the average person from his country, but still lived a normal life. Zhirenkov lived a normal life of the same repetitive schedule, waking up every morning at around 5:30 AM, then brushing his teeth with the same toothbrush for the last 9 years and washing his face, putting on the same yet different clothes and eating his breakfast of scrambled eggs that had to be bright yellow and very white with very little combine of the black pepper flakes and lightly toasted white bread, his favourite. In the same simple country called Fyrindor, it was a small country, about 65,300 square kilometres. Fyrindor was a very grassy country with vast crops of wheat, beans, corn, potatoes, rice, and yams. But on one boring, bright sunny Monday morning, something interrupted his ordinary repetitive routine when Zhirenkov got to his school, which was a dark maroon red brick building on the street of Lewis Dale and 3rd Avenue. Right outside, Zhirenkov sees a summoning circle around 6 feet by 6 feet, really bright red and a bright dark shade of yellow.</p>
+      <p><strong>If you want to discover what is on the other side of the bright red and bright dark shade of yellow summoning circle, <a href="#choice2" onclick="scrollToChoice('choice2')">go to choice 2</a></strong></p>
+      <p><strong>If you don't want to discover what's on the other side of the bright red and bright dark shade of yellow summoning circle, <a href="#choice3" onclick="scrollToChoice('choice3')">go to choice 3</a></strong></p>
+    </div>
+
+    <div id="choice2" class="story-section" style="display:none;">
+      <h3>Choice 2:</h3>
+      <p>On the other side of the summoning circle, Zhirenkov appears in a different dimension called the Rimmeqith, and you look around and see red fog, red mist and a red sky with a red, wavy, deep lake. Then Zhirenkov Nikita Denisovich started to fully process the situation that Zhirenkov was in, then Zhirenkov realized what was wrong, then Zhirenkov started to wonder why and how that happened, and who and what summoned him there, and if there was a way back. Then, Zhirenkov started to realize the red fog and the red mist were starting to clear up. Suddenly, after it was clear, Zhirenkov saw a bear-like creature around 10 feet tall and looking like a giant-faced bear appear. Then disappear, but when Zhirenkov turned around, he saw it appear again with glowing eyes, with the intent of killing him and feasting on his bloody, tasty flesh. Using his survival instinct and the adrenaline from the rush of being scared to the bone from the bear, Zhirenkov started to run. And run Zhirenkov did, but the bear-like creature started chasing and trying to reach his body. The bear managed to reach his body, grabbing his arm, ripping it off, but not clean, his shoulder socket, his wrist snapped back and broke, and all his nerves twisted, and the pain was the most excruciating pain Zhirenkov had experienced in his 15 years of life. After his arm got ripped off, Zhirenkov started to run away even faster, and he started to try to juke the bear out. But the bear managed to scare the Zhirenkov out of him while trying to juke, so Zhirenkov accepted his fate of dying, but did not want to die without a major fight. So Zhirenkov pulled his 56G4A pocket switch blade, which was a standard issue for the Fyrindor boy scout who wanted to prepare for the army or special forces. Then started swinging and slashing with the pocket switch blade against the bear-like creature. But the skin of the bear-like creature was like high-carbon steel and Kevlar.</p>
+      <p><strong>If you want to run away, <a href="#choice4" onclick="scrollToChoice('choice4')">go to choice 4</a></strong></p>
+      <p><strong>If you want to fight the bear, <a href="#ending1" onclick="scrollToChoice('ending1')">go to ending 1</a></strong></p>
+    </div>
+
+    <div id="choice3" class="story-section" style="display:none;">
+      <h3>Choice 3:</h3>
+      <p>When Zhirenkov sees the summoning circle, Zhirenkov tries to run away. And run away, Zhirenkov did. Zhirenkov ran about 15 feet before the summoning circle started following him, and when Zhirenkov realized the summoning circle was somehow following him. Zhirenkov started running at an alarming rate that Zhirenkov had to take a breather, and when Zhirenkov did. A guy named Leo Carter punched him square in the face. Then did a jab, then a hook, then an upper hook. Knocking his now bloody face on the floor where the summoning circle was. But something did not seem normal for Leo Carter because Zhirenkov was pulling multiple boxing moves on him, but his eyes were red. As soon as you finish processing this, you see the summoning circle was right under him. Then Zhirenkov realized Zhirenkov was done, so for his last hope, Zhirenkov grabbed his 56G4A pocket switch blade, which was a standard issue for the Fyrindor boy scout who wanted to prepare for the army or special forces and started swinging and slashing at Leo Carter. After killing Leo Carter, the summoning circle sucks his body up. Realizing his fate, Zhirenkov started running away. Then Leo Carter's father came running by.</p>
+      <p><strong>If you want to run away from Leo Carter's father and the summoning circle, <a href="#choice5" onclick="scrollToChoice('choice5')">go to choice 5</a></strong></p>
+      <p><strong>If you want to try to fight Leo Carter's father, <a href="#ending1" onclick="scrollToChoice('ending1')">go to ending 1</a></strong></p>
+    </div>
+
+    <div id="choice4" class="story-section" style="display:none;">
+      <h3>Choice 4:</h3>
+      <p>He keeps swinging and slashing with the pocket switch blade against the bear-like creature. And someone comes riding by on a horse, and after seeing him, someone comes and pulls up right next to the bear and with one slash of a sword takes the bear-like creature, killing it. Then the bear killer asked what you are doing up and outside during the time of the day, and who Zhirenkov is. So Zhirenkov introduced himself as Zhirenkov Nikita Denisovich, who was 15 years old and came from the Fyrindor country. The bear killer introduced herself as Lobova Sofya Vladimirovna, a member of the arm guards of the Zephyrua kingdom. Then Lobova asks where you came from and why you are in the death forest of the land of demons. Lobova said, "You were lucky that you are alive," which Zhirenkov knew and asked for a medical kit for his arm because the bear-like creature ripped it off.</p>
+      <p>Lobova gave him a medical kit, and Zhirenkov stitched himself up with a medical needle while in agony and pain. After Zhirenkov stitched himself up. Lobova asked again, "What are you doing in the Demon Land Death Forest?"</p>
+      <p>Zhirenkov responds, "I have no idea why I'm here, I just step on a summoning circle around 6 feet by 6 feet, really bright red and a bright dark shade of yellow. And I got over here."</p>
+      <p>Lobova says, "So you are summoned, man, and you have no point in this land of the kingdom of Zephyrua."</p>
+      <p>After a brief conversation, Lobova says, "Just get on the back of the horse that I'm on." So Zhirenkov got on the back of Lobova's horse when Lobova rode off into the dark red sky. By morning, Zhirenkov and Lobova got to the royal capital of the land, the kingdom of Zephyrua. Where Lobova brought Zhirenkov to the governing crown princess of the royal capital of the kingdom. Where the crown princess of the royal capital, Evdokiya Herleif, spoke to him, "Do you know why you are here, small weak dying peasant?"</p>
+      <p><strong>If you want to adapt and live a new life in the royal capital of Zephyru, <a href="#choice6" onclick="scrollToChoice('choice6')">go to choice 6</a></strong></p>
+      <p><strong>If you want Zhirenkov to fight the crown princess, <a href="#choice7" onclick="scrollToChoice('choice7')">go to choice 7</a></strong></p>
+    </div>
+
+    <div id="choice5" class="story-section" style="display:none;">
+      <h3>Choice 5:</h3>
+      <p>Then Leo Carter's father came running at Zhirenkov. He ran into a summoning circle around 6 feet by 6 feet, really bright red and a bright dark shade of yellow. There, he was transported to a different dimension. Around him, a mist of water appeared and then cleared. And when Zhirenkov stands up from the summoning circle, a creature around 15 feet high starts attacking Zhirenkov near his vital organs. So Zhirenkov pulled out his 56G4A pocket switch blade and started to prepare with an offensive stance. Then he looks closer and sees that the creature's face is pale, dark red, and bloody. Then from the back, a dark red, bloody-faced creature appears alongside a shape-shifting tangle of fog. And someone comes riding by on a horse-shaped creature where a black and red-looking robe and a bloody sword from slaying another creature.</p>
+      <p>So he had an internal conversation with himself, "Do I run away from the pale, dark red, bloody face creature, or do I run from the bloody sword-wielding man wearing a black and red-looking robe?"</p>
+      <p><strong>If you want to try to escape and adapt, <a href="#choice8" onclick="scrollToChoice('choice8')">go to choice 8</a></strong></p>
+      <p><strong>If you believe the man is an attacker, <a href="#choice7" onclick="scrollToChoice('choice7')">go to choice 7</a></strong></p>
+    </div>
+
+    <div id="choice6" class="story-section" style="display:none;">
+      <h3>Choice 6:</h3>
+      <p>The crown princess of the royal capital, Evdokiya Herleif, repeats, "I have zero idea of how to comprehend how you were brought here, but we have no use for you." So Zhirenkov says he has talents and wants to live in the kingdom. After a tense confrontation with Lobova, the crown princess says, "I think I will do what he wants and give an ordinary life in the royal capital of Zephyru, or I can make this Zhirenkov a working servant of the arm guards, who would work under your command."</p>
+      <p><strong>If you want a normal life, <a href="#choice9" onclick="scrollToChoice('choice9')">go to choice 9</a></strong></p>
+      <p><strong>If you want to ask for a drink of water, <a href="#ending2" onclick="scrollToChoice('ending2')">go to ending 2</a></strong></p>
+    </div>
+
+    <div id="choice7" class="story-section" style="display:none;">
+      <h3>Choice 7:</h3>
+      <p>Zhirenkov started to look around for a weapon and saw another summoning circle. Zhirenkov ran to it and thought it might bring him back, but it teleported him to an armada of weapons, and the armed guards started to attack.</p>
+      <p><strong>If you want Zhirenkov to attack offensively, <a href="#ending2" onclick="scrollToChoice('ending2')">go to ending 2</a></strong></p>
+      <p><strong>If you want Zhirenkov to attack defensively, <a href="#ending3" onclick="scrollToChoice('ending3')">go to ending 3</a></strong></p>
+    </div>
+
+    <div id="choice8" class="story-section" style="display:none;">
+      <h3>Choice 8:</h3>
+      <p>Zhirenkov sees the bloody sword-wielding man wearing a black and red-looking robe and the pale, dark red, bloody face creature in the distance. He realizes the creature was slain by the man and the man started to ride toward him at a very fast 90 km, much faster than he could run at 30km.</p>
+      <p><strong>If you want to chase and engage, <a href="#choice10" onclick="scrollToChoice('choice10')">go to choice 10</a></strong></p>
+      <p><strong>If you want to run away, <a href="#ending3" onclick="scrollToChoice('ending3')">go to ending 3</a></strong></p>
+    </div>
+
+    <div id="choice9" class="story-section" style="display:none;">
+      <h3>Choice 9:</h3>
+      <p>Zhirenkov proceeds to respond to Lobova and the crown princess, "I have not agreed to any of this." But after a dangerous back-and-forth, the crown princess finally agrees to let him live in the royal capital. After being released into the most dangerous street of the royal capital, Zhirenkov begins a dark journey. A man tries to rob him, and Zhirenkov kills him, taking his coins. He frames a little girl for the crime. Over time, Zhirenkov becomes a killer, murdering around 50 people as he learns how the world works. He visits a bakery, kills the cashier for taking too long, and steals bread and money. Exhausted and happy, he goes to an inn and falls asleep.</p>
+      <p><strong>If you want Zhirenkov to wake up, <a href="#ending4" onclick="scrollToChoice('ending4')">go to ending 4</a></strong></p>
+    </div>
+
+    <div id="choice10" class="story-section" style="display:none;">
+      <h3>Choice 10:</h3>
+      <p>Zhirenkov decides that time is running out. He rummaged in his backpack and found a bigger sword from his school. He went into a fighting stance and prepared himself. When the person wearing a black and red-looking robe came to him and asked, "What are you doing, young man, for if you run and look back, what is the point of running?" Zhirenkov said, "For the life of me, spare mine, and I can spare you." The person asked, "Who do you think you are to ask?" Zhirenkov responded, "I'm a man of my word, and if you spare my life, I can spare yours."</p>
+      <p><strong>If you want Zhirenkov to live, <a href="#ending4" onclick="scrollToChoice('ending4')">go to ending 4</a></strong></p>
+    </div>
+
+    <div id="ending1" class="story-section" style="display:none;">
+      <h3>Ending 1:</h3>
+      <p><strong>You die.</strong></p>
+      <p><a href="#choice1" onclick="scrollToChoice('choice1'); resetStory();">Start Over</a></p>
+    </div>
+
+    <div id="ending2" class="story-section" style="display:none;">
+      <h3>Ending 2:</h3>
+      <p><strong>You die.</strong></p>
+      <p><a href="#choice1" onclick="scrollToChoice('choice1'); resetStory();">Start Over</a></p>
+    </div>
+
+    <div id="ending3" class="story-section" style="display:none;">
+      <h3>Ending 3:</h3>
+      <p><strong>You die.</strong></p>
+      <p><a href="#choice1" onclick="scrollToChoice('choice1'); resetStory();">Start Over</a></p>
+    </div>
+
+    <div id="ending4" class="story-section" style="display:none;">
+      <h3>Ending 4:</h3>
+      <p>Zhirenkov sees a summoning circle around 6 feet by 6 feet, really bright red and a bright dark shade of yellow. He steps on it and finds himself right in front of his school.</p>
+      <p><strong>You survived and returned home.</strong></p>
+      <p><a href="#choice1" onclick="scrollToChoice('choice1'); resetStory();">Start Over</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- SOURCES -->
+<div class="page" id="sources">
+  <div class="label">References</div>
+  <h2 class="page-title">Sources &amp; <em>References</em></h2>
+  <p class="body-text">Sources will be added here.</p>
+</div>
+
+</div><!-- /container -->
+
+<footer>
+  <p>Ethics &amp; Literature · Interactive Experience</p>
+</footer>
+
+<script>
+/* ── PAGE NAVIGATION ── */
+function go(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  if (btn) {
+    btn.classList.add('active');
+  } else {
+    document.querySelectorAll('.nav-btn').forEach(b => {
+      if (b.getAttribute('onclick')?.includes("'" + id + "'")) b.classList.add('active');
+    });
+  }
+  window.scrollTo({ top: window.innerHeight * .88, behavior: 'smooth' });
+}
+
+/* ── STORY NAVIGATION ── */
+function scrollToChoice(choiceId) {
+  // Hide all story sections
+  document.querySelectorAll('.story-section').forEach(s => s.style.display = 'none');
+  // Show the selected one
+  document.getElementById(choiceId).style.display = 'block';
+  // Scroll to content
+  document.getElementById('storyContent').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetStory() {
+  document.querySelectorAll('.story-section').forEach(s => s.style.display = 'none');
+  document.getElementById('choice1').style.display = 'block';
+}
+
+/* ── 3D PARTICLES ── */
+const canvas = document.getElementById('bg');
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x090806, .011);
+const cam = new THREE.PerspectiveCamera(65, innerWidth/innerHeight, .1, 1000);
+cam.position.z = 45;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+const N = 1600;
+const pos = new Float32Array(N * 3);
+const spd = new Float32Array(N);
+for (let i = 0; i < N * 3; i += 3) {
+  pos[i]   = (Math.random() - .5) * 110;
+  pos[i+1] = (Math.random() - .5) * 110;
+  pos[i+2] = (Math.random() - .5) * 75;
+  spd[i/3] = .025 + Math.random() * .07;
+}
+const geo = new THREE.BufferGeometry();
+geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+const mat = new THREE.PointsMaterial({
+  color: 0xc9993e, size: innerWidth < 700 ? .22 : .1,
+  transparent:true, opacity:.9,
+  blending: THREE.AdditiveBlending, depthWrite:false
+});
+const pts = new THREE.Points(geo, mat);
+scene.add(pts);
+
+const orb = new THREE.Mesh(
+  new THREE.SphereGeometry(2, 32, 32),
+  new THREE.MeshBasicMaterial({ color: 0xc9993e, transparent:true, opacity:.07 })
+);
+scene.add(orb);
+
+let tx=0, ty=0, mx=0, my=0;
+window.addEventListener('mousemove', e => {
+  tx = (e.clientX - innerWidth/2) * .018;
+  ty = (e.clientY - innerHeight/2) * .018;
+});
+
+(function tick() {
+  requestAnimationFrame(tick);
+  mx += (tx - mx) * .05;
+  my += (ty - my) * .05;
+  pts.rotation.y = mx * .025;
+  pts.rotation.x = my * .025;
+  orb.position.x += (mx - orb.position.x) * .05;
+  orb.position.y += (-my - orb.position.y) * .05;
+  const arr = geo.attributes.position.array;
+  const t = performance.now() * .00008;
+  for (let i = 0; i < N * 3; i += 3) {
+    arr[i+1] += spd[i/3];
+    arr[i]   += Math.sin(t + i) * .0015;
+    arr[i+2] += Math.cos(t + i) * .0015;
+    if (arr[i+1] > 55) arr[i+1] = -55;
+  }
+  geo.attributes.position.needsUpdate = true;
+  renderer.render(scene, cam);
+})();
+
+window.addEventListener('resize', () => {
+  cam.aspect = innerWidth/innerHeight;
+  cam.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+/* ── TILT ON FRAMEWORK CARDS ── */
+document.querySelectorAll('.fw').forEach(el => {
+  el.addEventListener('mousemove', e => {
+    const r = el.getBoundingClientRect();
+    const rx = ((e.clientY - r.top) / r.height - .5) * -12;
+    const ry = ((e.clientX - r.left) / r.width - .5) * 12;
+    el.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+  });
+  el.addEventListener('mouseleave', () => el.style.transform = '');
+});
+</script>
+</body>
+</html>
